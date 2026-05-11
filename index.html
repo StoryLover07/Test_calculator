@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>간단한 계산기</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f4f7fb;
+      color: #18212f;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .calculator {
+      width: min(92vw, 360px);
+      padding: 20px;
+      background: #ffffff;
+      border: 1px solid #d8e0ec;
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgba(31, 44, 71, 0.14);
+    }
+
+    .display {
+      width: 100%;
+      min-height: 82px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      overflow: hidden;
+      border: 1px solid #cfd8e6;
+      border-radius: 6px;
+      background: #f9fbfe;
+      color: #111827;
+      font-size: clamp(2rem, 9vw, 2.8rem);
+      line-height: 1.05;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      min-height: 58px;
+      border: 0;
+      border-radius: 6px;
+      background: #e8eef6;
+      color: #162033;
+      font-size: 1.25rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    button:hover {
+      background: #dce6f2;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .operator,
+    .equals {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .operator:hover,
+    .equals:hover {
+      background: #1d4ed8;
+    }
+
+    .clear,
+    .delete {
+      background: #f1c45b;
+      color: #241a05;
+    }
+
+    .clear:hover,
+    .delete:hover {
+      background: #e7b949;
+    }
+
+    .span-two {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+  <main class="calculator" aria-label="간단한 계산기">
+    <output class="display" id="display" aria-live="polite">0</output>
+
+    <section class="keys" aria-label="계산기 버튼">
+      <button class="clear span-two" type="button" data-action="clear">AC</button>
+      <button class="delete" type="button" data-action="delete">DEL</button>
+      <button class="operator" type="button" data-value="/">÷</button>
+
+      <button type="button" data-value="7">7</button>
+      <button type="button" data-value="8">8</button>
+      <button type="button" data-value="9">9</button>
+      <button class="operator" type="button" data-value="*">×</button>
+
+      <button type="button" data-value="4">4</button>
+      <button type="button" data-value="5">5</button>
+      <button type="button" data-value="6">6</button>
+      <button class="operator" type="button" data-value="-">−</button>
+
+      <button type="button" data-value="1">1</button>
+      <button type="button" data-value="2">2</button>
+      <button type="button" data-value="3">3</button>
+      <button class="operator" type="button" data-value="+">+</button>
+
+      <button class="span-two" type="button" data-value="0">0</button>
+      <button type="button" data-value=".">.</button>
+      <button class="equals" type="button" data-action="calculate">=</button>
+    </section>
+  </main>
+
+  <script>
+    const display = document.querySelector("#display");
+    const keys = document.querySelector(".keys");
+    const operators = ["+", "-", "*", "/"];
+    let expression = "";
+
+    function updateDisplay(value) {
+      display.textContent = value || "0";
+    }
+
+    function appendValue(value) {
+      const lastChar = expression.at(-1);
+
+      if (value === "." && getCurrentNumber().includes(".")) {
+        return;
+      }
+
+      if (operators.includes(value) && !expression) {
+        if (value === "-") {
+          expression = value;
+          updateDisplay(formatExpression(expression));
+        }
+
+        return;
+      }
+
+      if (operators.includes(value) && operators.includes(lastChar)) {
+        expression = expression.slice(0, -1) + value;
+        updateDisplay(formatExpression(expression));
+        return;
+      }
+
+      expression += value;
+      updateDisplay(formatExpression(expression));
+    }
+
+    function getCurrentNumber() {
+      return expression.split(/[+\-*/]/).at(-1) || "";
+    }
+
+    function formatExpression(value) {
+      return value
+        .replaceAll("*", "×")
+        .replaceAll("/", "÷")
+        .replaceAll("-", "−");
+    }
+
+    function calculate() {
+      if (!expression || operators.includes(expression.at(-1))) {
+        return;
+      }
+
+      try {
+        const result = Function(`"use strict"; return (${expression})`)();
+        expression = Number.isFinite(result) ? String(Math.round(result * 1e10) / 1e10) : "";
+        updateDisplay(expression || "오류");
+      } catch {
+        expression = "";
+        updateDisplay("오류");
+      }
+    }
+
+    keys.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+
+      if (!button) {
+        return;
+      }
+
+      if (button.dataset.action === "clear") {
+        expression = "";
+        updateDisplay(expression);
+        return;
+      }
+
+      if (button.dataset.action === "delete") {
+        expression = expression.slice(0, -1);
+        updateDisplay(formatExpression(expression));
+        return;
+      }
+
+      if (button.dataset.action === "calculate") {
+        calculate();
+        return;
+      }
+
+      appendValue(button.dataset.value);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (/^[0-9.]$/.test(event.key) || operators.includes(event.key)) {
+        appendValue(event.key);
+      } else if (event.key === "Enter" || event.key === "=") {
+        event.preventDefault();
+        calculate();
+      } else if (event.key === "Backspace") {
+        expression = expression.slice(0, -1);
+        updateDisplay(formatExpression(expression));
+      } else if (event.key === "Escape") {
+        expression = "";
+        updateDisplay(expression);
+      }
+    });
+  </script>
+</body>
+</html>
