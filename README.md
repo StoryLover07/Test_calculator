@@ -1,6 +1,6 @@
-# Simple Calculator
+# Test Calculator
 
-A small browser calculator built with plain HTML, CSS, and JavaScript.
+A small browser calculator built with plain HTML, CSS, and JavaScript while testing calculator work with AI tools.
 
 ## Features
 
